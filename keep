@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -euo pipefail
+
+KEEP_FILE_LIMIT="${KEEP_FILE_LIMIT:-10}"
+
+###
+### util
+###
+
+function e.standard() {
+    echo "ERROR: $1 "
+    echo ""
+    usage
+}
+
+function usage() {
+    cat <<EOF
+keep record cmd other .bash_history
+
+EXAMPLE:
+  $ keep -- echo "hello"
+  $ cat ~/.bash_keep
+    > # $(date)
+    > echo hello
+
+SUBCOMMAND:
+  help    show usage
+EOF
+}
+
+function list() {
+    subcmd="${1:-nothing}"
+    case "$subcmd" in
+        "-t" )
+            # with timestamp
+            cat ~/.bash_keep
+            exit 0 ;;
+        * )
+            # without timestamp
+            cat ~/.bash_keep | grep -v "^#"
+            exit 0 ;;
+    esac
+}
+
+function main() {
+    # shellcheck disable=SC2086
+    # exec ↓
+    ${@:1:($#)}
+
+    ##
+    ## if success , write to keep file
+    ##
+
+    # check cmd limit
+    echo "$(tail -n "$(($KEEP_FILE_LIMIT * 2 - 2))" ~/.bash_keep)" > ~/.bash_keep
+    echo "# $(date)" >> ~/.bash_keep
+    echo "${@:1:($#)}" >> ~/.bash_keep
+}
+
+subcmd="${1:-nothing}"
+case "$subcmd" in
+    "--" )
+        if [ ! -f ~/.bash_keep ]; then touch ~/.bash_keep; fi
+        main "${@:2:($#)}"
+        exit 0 ;;
+    "list" )
+        list "${@:2:($#)}"
+        exit 0 ;;
+    "help" )
+        usage
+        exit 0 ;;
+    * )
+        e.standard "$subcmd is unexpected"
+        exit 1 ;;
+esac
+
