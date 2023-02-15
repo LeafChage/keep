@@ -26,6 +26,7 @@ EXAMPLE:
 
 SUBCOMMAND:
   help    show usage
+  list    show list
 EOF
 }
 
